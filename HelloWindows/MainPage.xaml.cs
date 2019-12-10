@@ -54,38 +54,50 @@ namespace HelloWindows
             try
             {
                 // Request the logged on user's consent via fingerprint swipe.
-                var consentResult = await Windows.Security.Credentials.UI.UserConsentVerifier.RequestVerificationAsync("Require you to authenticate");
+                //var consentResult = await Windows.Security.Credentials.UI.UserConsentVerifier.RequestVerificationAsync("Require you to authenticate");
+                var authenticationResult = await KeyCredentialManager.RequestCreateAsync("login", KeyCredentialCreationOption.ReplaceExisting);
+                var pubKeyBuffer = authenticationResult.Credential.RetrievePublicKey();
+                var pubKey = pubKeyBuffer.ToArray();
+                var pubKeyAsBase64 = Convert.ToBase64String(pubKey);
 
-                PopulateTextFieldData();
+                PopulateTextFieldData(pubKeyAsBase64);
 
-                switch (consentResult)
+                if (authenticationResult.Status == KeyCredentialStatus.Success)
                 {
-                    case Windows.Security.Credentials.UI.UserConsentVerificationResult.Verified:
-                        returnMessage = "Fingerprint verified.";
-                        break;
-                    case Windows.Security.Credentials.UI.UserConsentVerificationResult.DeviceBusy:
-                        returnMessage = "Biometric device is busy.";
-                        break;
-                    case Windows.Security.Credentials.UI.UserConsentVerificationResult.DeviceNotPresent:
-                        returnMessage = "No biometric device found.";
-                        break;
-                    case Windows.Security.Credentials.UI.UserConsentVerificationResult.DisabledByPolicy:
-                        returnMessage = "Biometric verification is disabled by policy.";
-                        break;
-                    case Windows.Security.Credentials.UI.UserConsentVerificationResult.NotConfiguredForUser:
-                        returnMessage = "The user has no fingerprints registered. Please add a fingerprint to the " +
-                                        "fingerprint database and try again.";
-                        break;
-                    case Windows.Security.Credentials.UI.UserConsentVerificationResult.RetriesExhausted:
-                        returnMessage = "There have been too many failed attempts. Fingerprint authentication canceled.";
-                        break;
-                    case Windows.Security.Credentials.UI.UserConsentVerificationResult.Canceled:
-                        returnMessage = "Fingerprint authentication canceled.";
-                        break;
-                    default:
-                        returnMessage = "Fingerprint authentication is currently unavailable.";
-                        break;
+                    returnMessage = "User is logged in";
                 }
+                else
+                {
+                    returnMessage = "Login error: " + authenticationResult.Status;
+                }
+                //switch (consentResult)
+                //{
+                //    case Windows.Security.Credentials.UI.UserConsentVerificationResult.Verified:
+                //        returnMessage = "Fingerprint verified.";
+                //        break;
+                //    case Windows.Security.Credentials.UI.UserConsentVerificationResult.DeviceBusy:
+                //        returnMessage = "Biometric device is busy.";
+                //        break;
+                //    case Windows.Security.Credentials.UI.UserConsentVerificationResult.DeviceNotPresent:
+                //        returnMessage = "No biometric device found.";
+                //        break;
+                //    case Windows.Security.Credentials.UI.UserConsentVerificationResult.DisabledByPolicy:
+                //        returnMessage = "Biometric verification is disabled by policy.";
+                //        break;
+                //    case Windows.Security.Credentials.UI.UserConsentVerificationResult.NotConfiguredForUser:
+                //        returnMessage = "The user has no fingerprints registered. Please add a fingerprint to the " +
+                //                        "fingerprint database and try again.";
+                //        break;
+                //    case Windows.Security.Credentials.UI.UserConsentVerificationResult.RetriesExhausted:
+                //        returnMessage = "There have been too many failed attempts. Fingerprint authentication canceled.";
+                //        break;
+                //    case Windows.Security.Credentials.UI.UserConsentVerificationResult.Canceled:
+                //        returnMessage = "Fingerprint authentication canceled.";
+                //        break;
+                //    default:
+                //        returnMessage = "Fingerprint authentication is currently unavailable.";
+                //        break;
+                //}
             }
             catch (Exception ex)
             {
@@ -95,19 +107,25 @@ namespace HelloWindows
             await ShowMsg(returnMessage);
         }
 
-        private void PopulateTextFieldData()
+        private void PopulateTextFieldData(string userSuppliedId = " - none - ")
         {
             var localPrincipal = System.Threading.Thread.CurrentPrincipal;
             var localPrincipalName = localPrincipal == null ? " - none found - " : localPrincipal.Identity?.Name;
             txtLocalP.Text = $"Local Principal: {localPrincipalName}";
             var userId = Windows.Storage.ApplicationData.Current.LocalSettings.Values["userId"] as string ?? "- None found -";
             txtAppData.Text = $"Local Data Identity UserId: {userId}";
+            txtPassedIn.Text = $"Passed in Identity Id: {userSuppliedId}";
         }
 
         private async Task ShowMsg(string msg)
         {
             var dlg = new MessageDialog(msg);
             await dlg.ShowAsync();
+        }
+
+        private async void btnPicker_Click(object sender, RoutedEventArgs e)
+        {
+            await ShowMsg("not done");
         }
     }
 }
