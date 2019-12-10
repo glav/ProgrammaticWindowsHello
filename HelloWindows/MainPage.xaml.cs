@@ -30,6 +30,13 @@ namespace HelloWindows
             this.InitializeComponent();
         }
 
+        protected override void OnNavigatedTo(NavigationEventArgs e)
+        {
+            PopulateTextFieldData();
+
+            base.OnNavigatedTo(e);
+        }
+
         private async void btnTest_Click(object sender, RoutedEventArgs e)
         {
             var keyCredentialAvailable = await KeyCredentialManager.IsSupportedAsync();
@@ -48,6 +55,8 @@ namespace HelloWindows
             {
                 // Request the logged on user's consent via fingerprint swipe.
                 var consentResult = await Windows.Security.Credentials.UI.UserConsentVerifier.RequestVerificationAsync("Require you to authenticate");
+
+                PopulateTextFieldData();
 
                 switch (consentResult)
                 {
@@ -84,6 +93,15 @@ namespace HelloWindows
             }
 
             await ShowMsg(returnMessage);
+        }
+
+        private void PopulateTextFieldData()
+        {
+            var localPrincipal = System.Threading.Thread.CurrentPrincipal;
+            var localPrincipalName = localPrincipal == null ? " - none found - " : localPrincipal.Identity?.Name;
+            txtLocalP.Text = $"Local Principal: {localPrincipalName}";
+            var userId = Windows.Storage.ApplicationData.Current.LocalSettings.Values["userId"] as string ?? "- None found -";
+            txtAppData.Text = $"Local Data Identity UserId: {userId}";
         }
 
         private async Task ShowMsg(string msg)
